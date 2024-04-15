@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,6 +10,11 @@ public class PlayerInput : MonoBehaviour
 {
     private Rigidbody rb;
     private bool IsGrounded=false;
+    private bool BouncePad = false;
+
+    
+    private float gravity = -9.8f;
+    
     
     
     [SerializeField] private float speed = 5f;
@@ -38,14 +44,23 @@ public class PlayerInput : MonoBehaviour
     private void Move(float x, float z)
     {
         rb.velocity = new Vector3(x * speed, rb.velocity.y, z* speed);
+        
     }
 
     void OnJump()
     {
         if (IsGrounded)
         {
+            if (BouncePad)
+            {
+                rb.AddForce(0,jumpHeight*1.5F,0,ForceMode.VelocityChange);
+                
+            }
             Jump();
+                
+            
         }
+
         
     }
     private void Jump()
@@ -54,9 +69,35 @@ public class PlayerInput : MonoBehaviour
         
     }
 
+    private void UpsideDown()
+    {
+            gravity = -1*gravity;
+            Physics.gravity = new Vector3(0, gravity, 0);
+      
+    }
+    
+    
+    void OnCollisionEnter(Collision collision)
+    {
+        switch (collision.gameObject.tag)
+        {
+            case "JumpPad":
+                BouncePad = true;
+                break;
+            case "Grav":
+                UpsideDown();
+                break;
+        }
+        
+    }
+    
     void OnCollisionExit(Collision collision)
     {
         IsGrounded = false;
+        if (collision.gameObject.CompareTag("JumpPad"))
+        {
+            BouncePad = false;
+        }
     }
 
     void OnCollisionStay(Collision collision)
@@ -64,6 +105,7 @@ public class PlayerInput : MonoBehaviour
         if (Vector3.Angle(collision.GetContact(0).normal, Vector3.up) < 45f)
         {
             IsGrounded = true;
+            
         }
         else
         {
